@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+import { Mascot } from "@/components/Mascot";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL, X_HANDLE } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#060608",
+  themeColor: "#0d0c12",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -27,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
         />
       </head>
       <body>
@@ -35,8 +36,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <footer className="footer">
           <div className="container">
-            <span>© {new Date().getFullYear()} {SITE_NAME}</span>
-            <span>Caps'ler eğlence amaçlı arşivlenmiştir. Kaldırılmasını istediğin bir içerik varsa X üzerinden yaz.</span>
+            <span className="made"><Mascot size={22} /> © {new Date().getFullYear()} {SITE_NAME}</span>
+            <span>Caps&apos;ler eğlence amacıyla arşivlenir. Kaldırılmasını istediğin bir içerik varsa X&apos;ten yaz.</span>
           </div>
         </footer>
       </body>

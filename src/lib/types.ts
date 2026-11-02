@@ -11,6 +11,15 @@ export type Meme = {
   size_bytes: number | null;
   sha256: string | null;
   created_at: string;
+  category_id: number | null;
+};
+
+export type Category = {
+  id: number;
+  name: string;
+  emoji: string;
+  slug: string;
+  position: number;
 };
 
 export type SortKey = "new" | "old" | "az";

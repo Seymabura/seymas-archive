@@ -3,9 +3,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getBrowserClient } from "@/lib/supabase";
-import { MEME_COLUMNS } from "@/lib/memes";
+import { CATEGORY_COLUMNS, MEME_COLUMNS } from "@/lib/memes";
 import { tagCounts } from "@/lib/text";
-import type { Meme } from "@/lib/types";
+import type { Category, Meme } from "@/lib/types";
+import { Mascot } from "../Mascot";
+import { CategoryManager } from "./CategoryManager";
 import { SetupNotice } from "../SetupNotice";
 import { useToast } from "../useToast";
 import { Uploader } from "./Uploader";
@@ -18,13 +20,19 @@ export function AdminApp() {
   const [status, setStatus] = useState<Status>("loading");
   const [session, setSession] = useState<Session | null>(null);
   const [memes, setMemes] = useState<Meme[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { show: showToast, node: toastNode } = useToast();
 
   const load = useCallback(async () => {
     if (!sb) return;
-    const { data, error } = await sb.from("memes").select(MEME_COLUMNS).order("created_at", { ascending: false }).limit(2000);
-    if (error) showToast(`Arşiv yüklenemedi: ${error.message}`, true);
-    else setMemes((data ?? []) as Meme[]);
+    const [m, c] = await Promise.all([
+      sb.from("memes").select(MEME_COLUMNS).order("created_at", { ascending: false }).limit(2000),
+      sb.from("categories").select(CATEGORY_COLUMNS).order("position").order("name"),
+    ]);
+    if (m.error) showToast(`Arşiv yüklenemedi: ${m.error.message}`, true);
+    else setMemes((m.data ?? []) as Meme[]);
+    if (c.error) showToast("Kategoriler yüklenemedi. 002_kategoriler.sql dosyasını Supabase'te çalıştırdın mı?", true);
+    else setCategories((c.data ?? []) as Category[]);
   }, [sb, showToast]);
 
   // Giriş durumunu izle; giriş yapan kişi yönetici mi kontrol et.
@@ -71,15 +79,16 @@ export function AdminApp() {
       <div className="admin-head">
         <div>
           <h1 className="chrome-text">Yönetim</h1>
-          <p>{memes.length} caps · {known.length} etiket · {session?.user.email}</p>
+          <p>{memes.length} caps · {categories.length} kategori · {known.length} etiket · {session?.user.email}</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Link href="/" className="btn btn-sm">Siteyi gör</Link>
           <button className="btn btn-sm btn-ghost" onClick={() => sb.auth.signOut()}>Çıkış yap</button>
         </div>
       </div>
-      <Uploader memes={memes} known={known} onSaved={(m) => { showToast(`Arşive eklendi · No. ${String(m.no).padStart(4, "0")}`); afterChange(); }} />
-      <Manager memes={memes} known={known} onChanged={afterChange} toast={showToast} />
+      <Uploader memes={memes} known={known} categories={categories} onSaved={(m) => { showToast(`Arşive eklendi · No. ${String(m.no).padStart(4, "0")}`); afterChange(); }} />
+      <Manager memes={memes} known={known} categories={categories} onChanged={afterChange} toast={showToast} />
+      <CategoryManager categories={categories} memes={memes} onChanged={afterChange} toast={showToast} />
       {toastNode}
     </main>
   );
@@ -104,8 +113,9 @@ function Login() {
   return (
     <main className="container">
       <form className="panel-card auth-card" onSubmit={submit}>
+        <Mascot size={90} track />
         <div>
-          <h1 className="chrome-text">Yönetici girişi</h1>
+          <h1>Yönetici girişi</h1>
           <p style={{ marginTop: 8 }}>Caps eklemek ve düzenlemek için giriş yap.</p>
         </div>
         <div className="field">
@@ -117,7 +127,7 @@ function Login() {
           <input id="password" className="input" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         {err && <div className="err-text" role="alert">{err}</div>}
-        <button className="btn btn-neon" disabled={busy}>{busy ? "Giriş yapılıyor…" : "Giriş yap"}</button>
+        <button className="btn btn-primary" disabled={busy}>{busy ? "Giriş yapılıyor…" : "Giriş yap"}</button>
       </form>
     </main>
   );

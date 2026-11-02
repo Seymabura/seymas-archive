@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { MemeDetail } from "@/components/MemeDetail";
 import { PrevIcon } from "@/components/Icons";
 import { SITE_NAME } from "@/lib/config";
-import { fetchMeme, mediaUrl } from "@/lib/memes";
+import { fetchCategories, fetchMeme, mediaUrl } from "@/lib/memes";
 import { archiveNo, isVideo } from "@/lib/text";
 
 export const revalidate = 300;
@@ -29,14 +29,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function MemePage({ params }: Props) {
   const { id } = await params;
-  const meme = await fetchMeme(id);
+  const [meme, categories] = await Promise.all([fetchMeme(id), fetchCategories()]);
   if (!meme) notFound();
+  const category = categories.find((c) => c.id === meme.category_id);
   return (
     <main className="container">
       <div style={{ paddingTop: 28 }}>
         <Link href="/" className="btn btn-sm"><PrevIcon size={16} /> Tüm arşiv</Link>
       </div>
-      <MemeDetail meme={meme} asPage />
+      <MemeDetail meme={meme} category={category} asPage />
     </main>
   );
 }

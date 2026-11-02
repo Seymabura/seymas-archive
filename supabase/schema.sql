@@ -96,3 +96,7 @@ create policy "yonetici dosya siler" on storage.objects
 --
 -- insert into public.admins (email) values ('SENIN_EMAILIN@ornek.com') on conflict do nothing;
 -- ============================================================
+
+-- ============================================================
+-- 5) Sıfırdan kurulumda bunun ardından 002_kategoriler.sql dosyasını da çalıştır.
+-- ============================================================

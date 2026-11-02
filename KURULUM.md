@@ -15,6 +15,7 @@ Hepsi ücretsiz.
 3. Proje açılınca soldaki menüden **SQL Editor** → **New query**.
 4. Bu klasördeki `supabase/schema.sql` dosyasının **tamamını** kopyala, yapıştır ve **Run** de.
    "Success" görmelisin.
+   Ardından aynı şekilde `supabase/002_kategoriler.sql` dosyasını da çalıştır (kategoriler ve 50 MB video sınırı).
 5. Yeni bir sorgu aç, aşağıdaki satırı **kendi e-postanla** değiştirip çalıştır:
    ```sql
    insert into public.admins (email) values ('SENIN_EMAILIN@ornek.com');

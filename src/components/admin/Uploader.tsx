@@ -5,12 +5,13 @@ import { BUCKET } from "@/lib/config";
 import { getBrowserClient } from "@/lib/supabase";
 import { MEME_COLUMNS } from "@/lib/memes";
 import { archiveNo, formatSize } from "@/lib/text";
-import type { Meme } from "@/lib/types";
+import type { Category, Meme } from "@/lib/types";
+import { catColor, vars } from "@/lib/colors";
 import { UploadIcon } from "../Icons";
 import { TagInput } from "./TagInput";
 
 const TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "video/mp4", "video/webm"];
-const MAX = 20 * 1024 * 1024;
+const MAX = 50 * 1024 * 1024;
 const EXT: Record<string, string> = {
   "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "video/mp4": "mp4", "video/webm": "webm",
 };
@@ -42,14 +43,15 @@ function dimensions(file: File, url: string): Promise<{ w: number; h: number }> 
   });
 }
 
-type Props = { memes: Meme[]; known: string[]; onSaved: (m: Meme) => void };
+type Props = { memes: Meme[]; known: string[]; categories: Category[]; onSaved: (m: Meme) => void };
 
-export function Uploader({ memes, known, onSaved }: Props) {
+export function Uploader({ memes, known, categories, onSaved }: Props) {
   const sb = getBrowserClient()!;
   const [picked, setPicked] = useState<Picked | null>(null);
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [hashing, setHashing] = useState(false);
@@ -62,7 +64,7 @@ export function Uploader({ memes, known, onSaved }: Props) {
   const take = useCallback(async (file: File) => {
     setErr("");
     if (!TYPES.includes(file.type)) return setErr("Bu dosya türü desteklenmiyor. PNG, JPG, GIF, WEBP, MP4 ya da WEBM seç.");
-    if (file.size > MAX) return setErr(`Dosya ${formatSize(file.size)}. En fazla 20 MB yükleyebilirsin.`);
+    if (file.size > MAX) return setErr(`Dosya ${formatSize(file.size)}. En fazla 50 MB yükleyebilirsin.`);
     const url = URL.createObjectURL(file);
     setPicked((prev) => { if (prev) URL.revokeObjectURL(prev.url); return { file, url, sha: "", w: 0, h: 0 }; });
     setHashing(true);
@@ -88,7 +90,7 @@ export function Uploader({ memes, known, onSaved }: Props) {
 
   const reset = () => {
     if (picked) URL.revokeObjectURL(picked.url);
-    setPicked(null); setTitle(""); setTags([]); setCaption(""); setErr("");
+    setPicked(null); setTitle(""); setTags([]); setCaption(""); setErr(""); setCategoryId(null);
   };
 
   async function save() {
@@ -107,6 +109,7 @@ export function Uploader({ memes, known, onSaved }: Props) {
         .insert({
           title: title.trim(), tags, caption: caption.trim(), storage_path: path, media_type: picked.file.type,
           width: picked.w || null, height: picked.h || null, size_bytes: picked.file.size, sha256: picked.sha,
+          category_id: categoryId,
         })
         .select(MEME_COLUMNS)
         .single();
@@ -141,7 +144,7 @@ export function Uploader({ memes, known, onSaved }: Props) {
             <strong>Görseli buraya bırak</strong>
             <p>ya da kopyaladığın görseli bu sayfada <b>Ctrl+V</b> ile yapıştır</p>
             <button type="button" className="btn btn-sm" onClick={() => fileRef.current?.click()}>Dosya seç</button>
-            <p>PNG · JPG · GIF · WEBP · MP4 — en fazla 20 MB</p>
+            <p>PNG · JPG · GIF · WEBP · MP4 — en fazla 50 MB</p>
           </div>
           <input ref={fileRef} type="file" accept={TYPES.join(",")} hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) take(f); }} />
           {picked && (
@@ -157,6 +160,12 @@ export function Uploader({ memes, known, onSaved }: Props) {
             <label htmlFor="up-title">Başlık</label>
             <input id="up-title" ref={titleRef} className="input" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Örn. Ben bu filmi görmüştüm" />
           </div>
+          {categories.length > 0 && (
+            <div className="field">
+              <label>Kategori <span>· isteğe bağlı</span></label>
+              <CategoryPick categories={categories} value={categoryId} onChange={setCategoryId} />
+            </div>
+          )}
           <div className="field">
             <label htmlFor="up-tags">Etiketler <span>· Enter ya da virgülle ekle</span></label>
             <TagInput id="up-tags" value={tags} onChange={setTags} known={known} />
@@ -179,5 +188,25 @@ export function Uploader({ memes, known, onSaved }: Props) {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Kategori seçici: renkli düğmeler, tekrar tıklayınca seçim kalkar. */
+export function CategoryPick({ categories, value, onChange }: { categories: Category[]; value: number | null; onChange: (id: number | null) => void }) {
+  return (
+    <div className="cat-pick" role="group" aria-label="Kategori seç">
+      {categories.map((c) => (
+        <button
+          type="button"
+          key={c.id}
+          className="cat"
+          aria-pressed={value === c.id}
+          style={vars({ "--c": catColor(c) })}
+          onClick={() => onChange(value === c.id ? null : c.id)}
+        >
+          <span className="e" aria-hidden>{c.emoji}</span> {c.name}
+        </button>
+      ))}
+    </div>
   );
 }
